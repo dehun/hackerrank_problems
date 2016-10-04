@@ -1,12 +1,13 @@
 import Control.Monad
 import Data.Functor
-import Data.Maybe    
+import Data.Maybe
 
-bsolve_round :: [(Int, Int)] -> Maybe [(Int, Int)] 
-bsolve_round (x:[]) = Just (x:[])
-bsolve_round ((x, cx):(y, cy):r) =
-    let xstay_choice = (:)(x, cx) <$> (bsolve_round ((y, cy):r))
-        xswap_choice = (:) (y, cy) <$> (bsolve_round ((x, cx + 1):r))
+
+bsolve_round :: Int -> [(Int, Int)] -> Maybe (Int, [(Int, Int)])
+bsolve_round swaps (x:[]) = Just (swaps, x:[])
+bsolve_round swaps ((x, cx):(y, cy):r) =
+    let xstay_choice = (\(nswaps, narr) -> (nswaps, (:) (x, cx) narr)) <$> (bsolve_round swaps ((y, cy):r))
+        xswap_choice = (\(nswaps, narr) -> (nswaps, (:) (y, cy) narr)) <$> (bsolve_round (swaps + 1) ((x, cx + 1):r))
     in
       if x > y
       then
@@ -15,26 +16,20 @@ bsolve_round ((x, cx):(y, cy):r) =
           else xswap_choice
       else xstay_choice
 
+
 bsolve :: [Int] -> Maybe Int
 bsolve xs =
     let zeroed = zip xs (take (length xs) (repeat 0))
-        sorted = foldM (\inp _ ->
-                            bsolve_round inp
-                       ) zeroed [1..length xs]
-    in sum <$> map snd <$> sorted
+        sorted = foldM (\(inp, old_swaps, skip) _ -> 
+                          if skip
+                          then return (inp, old_swaps, skip)
+                          else do
+                            (r, ninp) <- bsolve_round 0 inp
+                            return (ninp, old_swaps + r, r == 0)
+                       ) (zeroed, 0, False) [1..length xs]
+    in (\(_, res, _) -> res) <$> sorted
         
     
-solve :: [Int] -> Maybe Int
-solve xs =
-    foldM (\acc (i, x) ->
-               let d = x - i
-               in if d > 2
-               then Nothing
-               else if d > 0
-                    then Just (acc  + x - i)
-                    else Just acc
-          ) 0 (zip [1..length xs] xs)
-
 main = do
   t <- read <$> getLine
   mapM (\_ -> do
