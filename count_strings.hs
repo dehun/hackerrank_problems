@@ -64,6 +64,7 @@ parse = do
         Just ROr -> do
                    get_char
                    return ROr
+        Just RStar -> return RStar
         _ -> return RAnd
 
   rr <- parse_token <$> lookahead_char
