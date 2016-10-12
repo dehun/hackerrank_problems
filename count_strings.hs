@@ -79,24 +79,27 @@ parse = do
   
 
 
-
-count :: Integer -> RToken -> [Integer]
-count 1 RA = [1]
-count _ RA = []
-count 1 RB = [1]
-count _ RB = []
-count n (ROp l ROr r) = count n l ++ count n r
-count n (ROp l RAnd r) = let lefts = concatMap (\x -> count x l) [1..n-1]
-                     in traceShowId $ concatMap (\ll -> count ll r) lefts
+count :: Integer -> RToken -> (Integer, [Integer])
+count 1 RA = (1, [1])
+count _ RA = (0, [])
+count 1 RB = (1, [1])
+count _ RB = (0, [])
+count n (ROp l ROr r) =
+    (\(lc, lv) (rc, rv) -> (lc + rc, lv ++ rv)) (count n l) (count n r)
+count n (ROp l RAnd r) = undefined
+count n (ROp l RStar RStar) = undefined
          
 solve :: String -> Integer -> Integer
 solve s n =
     let parsed = evalState parse s
         counted = count n parsed
-    in sum counted
+    in fst counted
     
 
 main = do
-  [s, n] <- words <$> getLine
-  let nn = read n :: Integer
-  putStrLn $ show $ solve s nn
+  t <- read <$> getLine
+  mapM_ (\_ -> do
+           [s, n] <- words <$> getLine
+           let nn = read n :: Integer
+           putStrLn $ show $ solve s nn
+        ) [1..t]
