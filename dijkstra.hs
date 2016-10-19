@@ -17,9 +17,10 @@ data Edge = Edge {
     } deriving (Show, Eq)    
 
 
-build_edges :: [[Int]] -> M.Map Int [Edge]
-build_edges joints = L.foldl (\acc j ->
-                                let [jsn, jen, jw] = j :: [Int]
+build_edges :: [(Int, Int, Int)] -> M.Map Int [Edge]
+build_edges joints = {-# SCC "build_edges" #-}
+    let edges = L.foldl (\acc j ->
+                                let (jsn, jen, jw) = j
                                     ledge = Edge jsn jen jw
                                     redge = Edge jen jsn jw
                                     ins :: M.Map Int [Edge] -> Int -> Edge -> M.Map Int [Edge]
@@ -27,7 +28,8 @@ build_edges joints = L.foldl (\acc j ->
                                                     Nothing -> M.insert l [e] a
                                                     Just edges -> M.insert l (e:edges) a
                                 in ins (ins acc jsn ledge) jen redge
-                           ) M.empty joints
+                           ) (trace "building" $ M.empty) joints
+    in trace (show $ length edges) $ edges
 
 
 dijkstra :: S.Set Int -> M.Map Int Int -> M.Map Int [Edge] -> M.Map Int Int
@@ -40,7 +42,7 @@ dijkstra to_visit distances edges
                             Just d -> d                                   
         next_node = minimumBy (\l r -> compare (node_distance l) (node_distance r)) to_visit
         next_traveled = M.lookup next_node distances
-        next_edges = fromJust $ M.lookup next_node edges 
+        next_edges = fromJust $ M.lookup next_node edges
         next_distances = L.foldl
                          (\acc e ->
                               case next_traveled of
@@ -74,7 +76,7 @@ show_distances s n distances =
     in join (L.intersperse " " arr)
 
           
-solve :: Int -> Int -> [[Int]] -> String
+solve :: Int -> Int -> [(Int, Int, Int)] -> String
 solve s n joints =
     let edges = build_edges joints
         distances = build_distances [1..n] s edges
@@ -84,7 +86,7 @@ main = do
   t <- read <$> getLine
   Control.Monad.mapM_ (\_ -> do
              [n, m] <- map read <$> take 2 <$> words <$> getLine
-             joints <- mapM (\_ -> map read <$> take 3 <$> words <$> getLine ) [1..m]
+             joints <- mapM (\_ -> (\[x, y, z] -> (x, y, z)) <$> map read <$> take 3 <$> words <$> getLine ) [1..m]
              s <- read <$> getLine
              putStrLn $ solve s n joints
         ) [1..t]
