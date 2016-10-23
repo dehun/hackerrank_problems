@@ -36,9 +36,6 @@ solve n m rows =
                               in (max (1 + getSum group) max_group, new_visited)
                      ) (0, S.empty) all_ones)
 
-    
-    
-
 main = do
   n <- read <$> getLine
   m <- read <$> getLine
