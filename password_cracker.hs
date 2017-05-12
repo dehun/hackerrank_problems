@@ -2,7 +2,8 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Functor
 import Control.Monad
-import Data.Maybe    
+import Data.Maybe
+import Control.Monad.State
 import Debug.Trace    
 
 data Trie = TNode { t_c :: Char, t_subs :: M.Map Char [Trie] }
@@ -49,18 +50,28 @@ subqueryTrie subtrie (c:cs) res =
 queryTrie :: Trie -> String -> [(String, String)]
 queryTrie trie la = subqueryTrie trie la ""
 
-
-subsolve :: Trie -> String -> Maybe [String]
-subsolve trie ""  = Just []
+type Memoized = M.Map String (Maybe [String])
+                    
+subsolve :: Trie -> String -> State  Memoized (Maybe [String]) 
+subsolve trie ""  = return $ Just []
 subsolve trie la  =
     let parses = (reverse $ queryTrie trie la) 
-        subseqs  =  map (\(parse, rest) -> (:) parse <$> subsolve trie rest) parses
-    in join $ find isJust subseqs
+        subseqs  =  mapM (\(parse, rest) -> do
+                            old <- get
+                            case M.lookup rest old of
+                              Just sol -> return sol
+                              Nothing -> do
+                                          subsolution <- subsolve trie rest
+                                          modify (\m -> M.insert rest subsolution m)
+                                          return $ (:) parse <$> subsolution
+                         ) parses
+    in do
+      join <$> find isJust <$> subseqs
 
 solve :: [String] -> String -> Maybe [String]
 solve ps la =
     let trie = buildTrie ps
-    in subsolve trie la 
+    in evalState (subsolve trie la) M.empty
 
 main = do
   n <- read <$> getLine :: IO Int
