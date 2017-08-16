@@ -4,7 +4,7 @@ import scala.collection.{SortedSet, mutable}
 import java.util.TreeSet
 
 
-object Solution {
+object MinimumLoss {
   def main(args: Array[String]): Unit = {
     val n = io.StdIn.readInt()
     val ps = io.StdIn.readLine().split(" ").map(_.toLong).toList
