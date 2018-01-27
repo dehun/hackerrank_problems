@@ -1,5 +1,3 @@
-import scala.collection.Searching
-
 object ClimbingTheLeaderboard {
   def places(scores:Array[Int]):Vector[(Int, Int)] = {
     var res = Vector.empty[(Int, Int)]
